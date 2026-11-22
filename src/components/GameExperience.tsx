@@ -20,7 +20,7 @@ import { readLastDraw, rememberDraw, validateDraw } from "@/lib/storage";
 import { saveTicket } from "@/lib/ticket";
 import { NAME_MAX_LENGTH, normalizeName, type EventState, type Song, type StoredDraw, type Ticket } from "@/lib/types";
 import { DESKTOP, MOBILE, colors } from "@/styles/global";
-import DialogBox, { Dock, SpeechBubble } from "./DialogBox";
+import { Dock, SpeechBubble } from "./DialogBox";
 import HopePicker from "./HopePicker";
 import { FindHint, Narration } from "./Narration";
 import HelpDialog from "./HelpDialog";
@@ -214,11 +214,24 @@ const Note = styled.p`
   }
 `;
 
-/** Name step: the sheep's bubble, then the answer row right under it (no window around it). */
-const NameStep = styled.div`
-  display: grid;
-  justify-items: center;
+/**
+ * Every conversation step: the sheep's bubble, then the answer right under it (name row, wish
+ * choices, or the result card). The last part shrinks and scrolls when the screen is short.
+ */
+const BubbleStep = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 18px;
+  min-height: 0;
+
+  & > * {
+    flex: none;
+  }
+  & > :last-child {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
 
   form {
     width: min(560px, 100%);
@@ -226,6 +239,27 @@ const NameStep = styled.div`
   /* one row on every screen (input 160px+, "확인 ▶"); only the long closed/waiting labels wrap */
   form > div > button {
     flex: none;
+  }
+`;
+
+const Answer = styled.div`
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+`;
+
+const AnswerFoot = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  padding: 4px;
+
+  & > p {
+    margin: 0;
   }
 `;
 
@@ -901,67 +935,73 @@ export default function GameExperience() {
       {introDone && (
         <Dock ref={dockRef}>
           {step === "result" && ticket ? (
-            <ResultWindow
-              ticket={ticket}
-              titleRef={songTitleRef}
-              busy={busy}
-              saving={saving}
-              hopeLabel={findHope(ticket.hope)?.label ?? null}
-              showRedraw={mode === "test"}
-              canRedraw={canDraw}
-              onListen={onListen}
-              onSave={() => void onSave()}
-              onShare={onShare}
-              onRedraw={chooseAgain}
-            />
+            <BubbleStep>
+              <SpeechBubble speaker="붉은 양" text={`짜잔! ${ticket.name}의 새해 첫 곡이 나왔양.`} instant={instantText} headingRef={speakerRef} />
+              <ResultWindow
+                ticket={ticket}
+                titleRef={songTitleRef}
+                busy={busy}
+                saving={saving}
+                hopeLabel={findHope(ticket.hope)?.label ?? null}
+                showRedraw={mode === "test"}
+                canRedraw={canDraw}
+                onListen={onListen}
+                onSave={() => void onSave()}
+                onShare={onShare}
+                onRedraw={chooseAgain}
+              />
+            </BubbleStep>
           ) : step === "name" ? (
-            <NameStep>
+            <BubbleStep>
               <SpeechBubble speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef} />
               <Form onSubmit={onSubmit} noValidate aria-busy={busy}>
                 <label htmlFor="visitorName" className="visually-hidden">
                   이름 또는 별명
                 </label>
                 <Row>
-                    <NameInput
-                      ref={inputRef}
-                      id="visitorName"
-                      name="name"
-                      type="text"
-                      value={name}
-                      onChange={onNameChange}
-                      onKeyDown={onNameKeyDown}
-                      onCompositionStart={() => {
-                        composingRef.current = true;
-                      }}
-                      onCompositionEnd={() => {
-                        composingRef.current = false;
-                      }}
-                      maxLength={NAME_MAX_LENGTH}
-                      required
-                      autoComplete="off"
-                      enterKeyHint="go"
-                      placeholder="불리고 싶은 이름"
-                      aria-describedby="modeNote"
-                      readOnly={busy}
-                      disabled={state !== null && phase !== "open"}
-                    />
-                    <PixelButton type="submit" disabled={!canDraw}>
-                      {submitLabel}
-                    </PixelButton>
-                  </Row>
-                  <FloatNote id="modeNote">{note}</FloatNote>
-                </Form>
-            </NameStep>
+                  <NameInput
+                    ref={inputRef}
+                    id="visitorName"
+                    name="name"
+                    type="text"
+                    value={name}
+                    onChange={onNameChange}
+                    onKeyDown={onNameKeyDown}
+                    onCompositionStart={() => {
+                      composingRef.current = true;
+                    }}
+                    onCompositionEnd={() => {
+                      composingRef.current = false;
+                    }}
+                    maxLength={NAME_MAX_LENGTH}
+                    required
+                    autoComplete="off"
+                    enterKeyHint="go"
+                    placeholder="불리고 싶은 이름"
+                    aria-describedby="modeNote"
+                    readOnly={busy}
+                    disabled={state !== null && phase !== "open"}
+                  />
+                  <PixelButton type="submit" disabled={!canDraw}>
+                    {submitLabel}
+                  </PixelButton>
+                </Row>
+                <FloatNote id="modeNote">{note}</FloatNote>
+              </Form>
+            </BubbleStep>
           ) : (
-            <DialogBox speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef}>
-              <HopePicker disabled={!canDraw} chosen={hope} firstRef={firstHopeRef} onPick={(key) => void openBag(key)} />
-              <Buttons>
-                <PixelButton type="button" $tone="paper" $small onClick={changeName} disabled={busy}>
-                  이름 바꾸기
-                </PixelButton>
-                <Note aria-live="polite">{busy ? "복주머니 여는 중…" : "소망을 고르면 복주머니가 열려요."}</Note>
-              </Buttons>
-            </DialogBox>
+            <BubbleStep>
+              <SpeechBubble speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef} />
+              <Answer>
+                <HopePicker disabled={!canDraw} chosen={hope} firstRef={firstHopeRef} onPick={(key) => void openBag(key)} />
+                <AnswerFoot>
+                  <PixelButton type="button" $tone="paper" $small onClick={changeName} disabled={busy}>
+                    이름 바꾸기
+                  </PixelButton>
+                  <FloatNote aria-live="polite">{busy ? "복주머니 여는 중…" : "소망을 고르면 복주머니가 열려요."}</FloatNote>
+                </AnswerFoot>
+              </Answer>
+            </BubbleStep>
           )}
         </Dock>
       )}

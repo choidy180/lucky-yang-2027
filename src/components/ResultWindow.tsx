@@ -13,6 +13,7 @@ const pop = keyframes`
 `;
 
 const Window = styled(PixelWindow)`
+  width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   padding: 20px 26px 22px;
@@ -21,7 +22,7 @@ const Window = styled(PixelWindow)`
   animation: ${pop} 0.32s steps(5) both;
 
   ${MOBILE} {
-    padding: 16px 16px 18px;
+    padding: 14px 14px 14px;
   }
   /* Wide screens: song | blessing side by side to keep the window short. */
   @media (min-width: 900px) {
@@ -40,22 +41,8 @@ const SongInfo = styled.div`
   min-width: 0;
 `;
 
-const Banner = styled.p`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: ${colors.red};
-  font-size: 18px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-  ${DESKTOP} {
-    font-size: 24px;
-  }
-`;
-
 const HopeChip = styled.p`
   display: inline-block;
-  margin-top: 6px;
   padding: 1px 8px;
   background: #ffe9d6;
   color: ${colors.wine};
@@ -71,6 +58,13 @@ const SongTitle = styled.h2`
   font-size: 36px;
   font-weight: 700;
   line-height: 1.2;
+  overflow-wrap: anywhere;
+  /* phones: the sheep and its bubble need the height more than a 36px title does */
+  ${MOBILE} {
+    margin-top: 6px;
+    font-size: 24px;
+    line-height: 1.25;
+  }
   ${DESKTOP} {
     font-size: 48px;
   }
@@ -89,8 +83,9 @@ const Artist = styled.p`
 `;
 
 const Wish = styled.div`
-  margin: 14px 0 16px;
-  padding: 12px 14px;
+  position: relative;
+  margin: 22px 0 16px;
+  padding: 14px 14px 10px;
   background: #fff;
   box-shadow:
     0 -2px 0 0 ${colors.paperShade},
@@ -98,18 +93,30 @@ const Wish = styled.div`
     -2px 0 0 0 ${colors.paperShade},
     2px 0 0 0 ${colors.paperShade};
 
+  /* label tag on the top edge, like the speaker tag on the bubble */
   h3 {
-    font-size: 18px;
+    position: absolute;
+    top: -11px;
+    left: 10px;
+    padding: 0 6px;
+    background: ${colors.wine};
+    color: #fff;
+    font-size: 12px;
     font-weight: 700;
-    color: ${colors.wine};
+    line-height: 1.6;
   }
   p {
-    margin-top: 4px;
     font-size: 18px;
     line-height: 1.6;
   }
+  ${MOBILE} {
+    margin: 18px 0 12px;
+  }
   ${DESKTOP} {
-    h3,
+    h3 {
+      top: -15px;
+      font-size: 18px;
+    }
     p {
       font-size: 24px;
     }
@@ -122,6 +129,9 @@ const Actions = styled.div`
   align-items: center;
   gap: 16px 18px;
   padding: 4px;
+  ${MOBILE} {
+    gap: 12px;
+  }
 
   & > :first-child {
     flex: 1 1 200px;
@@ -138,6 +148,9 @@ const Again = styled.div`
   gap: 12px;
   margin-top: 16px;
   padding: 0 4px;
+  ${MOBILE} {
+    margin-top: 12px;
+  }
 
   small {
     font-size: 12px;
@@ -166,10 +179,8 @@ export default function ResultWindow({ ticket, hopeLabel, showRedraw, canRedraw,
   return (
     <Window as="section" aria-label="새해 첫 곡 결과" aria-busy={busy}>
       <SongInfo>
-        <Banner>
-          <span aria-hidden="true">♪</span>
-          {ticket.name}님의 새해 첫 곡
-        </Banner>
+        {/* The sheep's bubble above says whose song it is; this keeps it for screen readers. */}
+        <p className="visually-hidden">{ticket.name}님의 새해 첫 곡</p>
         {hopeLabel && <HopeChip>내년 1순위 소망 · {hopeLabel}</HopeChip>}
         <SongTitle ref={titleRef} tabIndex={-1}>
           {ticket.song.title}
