@@ -18,9 +18,12 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // Browser extensions (e.g. ColorZilla's `cz-shortcut-listen`, Grammarly, Dark Reader) add
+  // attributes to <html>/<body> before React hydrates. This only ignores attribute differences
+  // on these two elements; mismatches inside the app are still reported.
   return (
-    <html lang="ko">
-      <body>
+    <html lang="ko" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
       </body>
     </html>
