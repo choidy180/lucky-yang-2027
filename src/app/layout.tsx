@@ -25,7 +25,6 @@ export const metadata: Metadata = {
   title: "올해 첫 곡은 뭐양? · 복주머니 레코드",
   description: "새벽 초원의 붉은 양에게 이름을 알려 주고, 복주머니를 열어 2027년 새해 첫 곡과 덕담을 받아 보세요.",
   referrer: "strict-origin-when-cross-origin",
-  icons: { icon: "/assets/yang.png" },
   formatDetection: { telephone: false },
   // Link previews in messengers. On Vercel, Next.js resolves these against the production URL.
   openGraph: {
@@ -33,9 +32,9 @@ export const metadata: Metadata = {
     description: "새벽 초원의 붉은 양을 찾아 복주머니를 열고, 2027년 새해 첫 곡과 덕담을 받아 보세요.",
     type: "website",
     locale: "ko_KR",
-    images: [{ url: "/assets/yang.png", width: 1254, height: 1254 }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "붉은 양과 복주머니, 올해 첫 곡은 뭐양?" }],
   },
-  twitter: { card: "summary", images: ["/assets/yang.png"] },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
 };
 
 export const viewport: Viewport = {

@@ -30,8 +30,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { title, description, type: "website", locale: "ko_KR", images: [{ url: "/assets/yang.png", width: 1254, height: 1254 }] },
-    twitter: { card: "summary", title, description, images: ["/assets/yang.png"] },
+    openGraph: { title, description, type: "website", locale: "ko_KR", images: [{ url: "/og.png", width: 1200, height: 630, alt: "붉은 양과 복주머니, 올해 첫 곡은 뭐양?" }] },
+    twitter: { card: "summary_large_image", title, description, images: ["/og.png"] },
   };
 }
 

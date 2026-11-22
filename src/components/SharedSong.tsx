@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { HERO_H, HERO_HAPPY, HERO_W, spriteCanvas } from "@/game/sprites";
 import { decodeNote, type ShareNote } from "@/lib/share";
 import type { Song } from "@/lib/types";
 import { DESKTOP, MOBILE, colors } from "@/styles/global";
@@ -60,15 +61,28 @@ const Home = styled.a`
   }
 `;
 
-const Mascot = styled.img`
-  width: 132px;
-  height: 132px;
+/** The game's pixel red sheep (happy face), drawn at whole-pixel scale. */
+const Mascot = styled.canvas`
+  width: ${HERO_W * 2}px;
+  height: ${HERO_H * 2}px;
+  image-rendering: pixelated;
   filter: drop-shadow(0 6px 0 rgba(6, 6, 20, 0.45));
   ${DESKTOP} {
-    width: 168px;
-    height: 168px;
+    width: ${HERO_W * 3}px;
+    height: ${HERO_H * 3}px;
   }
 `;
+
+function HeroSprite() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current?.getContext("2d");
+    if (!c) return;
+    c.clearRect(0, 0, HERO_W, HERO_H);
+    c.drawImage(spriteCanvas(HERO_HAPPY), 0, 0);
+  }, []);
+  return <Mascot ref={ref} width={HERO_W} height={HERO_H} aria-hidden="true" />;
+}
 
 const Card = styled(PixelWindow)<{ $ready: boolean }>`
   width: 100%;
@@ -225,7 +239,7 @@ export default function SharedSong({ shared }: { shared: Shared | null }) {
     <Scroll>
       <Column>
         <Home href="/">♪ 복주머니 레코드</Home>
-        <Mascot src="/assets/yang.png" alt="" width={168} height={168} />
+        <HeroSprite />
         {shared ? (
           <Card as="article" $ready={ready} aria-labelledby="sharedTitle">
             <Banner id="sharedTitle">
