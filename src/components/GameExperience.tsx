@@ -20,12 +20,13 @@ import { readLastDraw, rememberDraw, validateDraw } from "@/lib/storage";
 import { saveTicket } from "@/lib/ticket";
 import { NAME_MAX_LENGTH, normalizeName, type EventState, type Song, type StoredDraw, type Ticket } from "@/lib/types";
 import { DESKTOP, MOBILE, colors } from "@/styles/global";
-import DialogBox, { Dock } from "./DialogBox";
+import DialogBox, { Dock, SpeechBubble } from "./DialogBox";
 import HopePicker from "./HopePicker";
 import { FindHint, Narration } from "./Narration";
 import HelpDialog from "./HelpDialog";
 import PlayerDialog from "./PlayerDialog";
 import ResultWindow from "./ResultWindow";
+import ShareDialog from "./ShareDialog";
 import TitleBanner from "./TitleBanner";
 import { PixelButton } from "./pixel";
 
@@ -213,6 +214,33 @@ const Note = styled.p`
   }
 `;
 
+/** Name step: the sheep's bubble, then the answer row right under it (no window around it). */
+const NameStep = styled.div`
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+
+  form {
+    width: min(560px, 100%);
+  }
+  /* one row on every screen (input 160px+, "확인 ▶"); only the long closed/waiting labels wrap */
+  form > div > button {
+    flex: none;
+  }
+`;
+
+const FloatNote = styled(Note)`
+  display: table;
+  margin: 2px auto 0;
+  padding: 2px 10px;
+  text-align: center;
+  color: ${colors.cream};
+  background: rgba(19, 21, 50, 0.78);
+  button {
+    color: ${colors.gold};
+  }
+`;
+
 const Buttons = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -257,7 +285,7 @@ const Toast = styled.div<{ $visible: boolean }>`
 // State
 
 type ServerStatus = { kind: "loading" } | { kind: "ready"; state: EventState } | { kind: "error" };
-type ModalState = { kind: "player"; song: Song } | { kind: "help" } | null;
+type ModalState = { kind: "player"; song: Song } | { kind: "help" } | { kind: "share"; ticket: Ticket } | null;
 type IntroStage = "ready" | "playing" | "title" | "done";
 type Step = "name" | "bag" | "result";
 type FocusTarget = "speaker" | "input" | "hope" | "song";
@@ -407,27 +435,41 @@ export default function GameExperience() {
     engine.attachHotspot(hotspotRef.current);
     engine.start();
     engineRef.current = engine;
+    // Re-created after the opening (a dev hot reload): go straight back to the end scene.
+    if (introDoneRef.current) {
+      engine.skipIntro();
+      if (stepRef.current === "bag") engine.setBag("idle");
+      else if (stepRef.current === "result") engine.showOpenedBag();
+      measureDock();
+      measureTitle();
+    }
     if (process.env.NODE_ENV !== "production") (window as unknown as { __luckyYang?: GameEngine }).__luckyYang = engine;
     return () => {
       engine.destroy();
       if (engineRef.current === engine) engineRef.current = null;
     };
-  }, [endIntro, sfx]);
+  }, [endIntro, sfx]); // measureDock / measureTitle are stable (declared below, no deps)
 
   // The camera keeps the red sheep clear of the dialog/result window, whatever its height.
   const dockObserver = useRef<ResizeObserver | null>(null);
-  const dockRef = useCallback((el: HTMLDivElement | null) => {
-    dockObserver.current?.disconnect();
-    dockObserver.current = null;
-    if (!el) {
-      engineRef.current?.setBottomInset(0);
-      return;
-    }
-    const update = () => engineRef.current?.setBottomInset(window.innerHeight - el.getBoundingClientRect().top);
-    dockObserver.current = new ResizeObserver(update);
-    dockObserver.current.observe(el);
-    update();
+  const dockEl = useRef<HTMLDivElement | null>(null);
+  const measureDock = useCallback(() => {
+    const el = dockEl.current;
+    engineRef.current?.setBottomInset(el ? window.innerHeight - el.getBoundingClientRect().top : 0);
   }, []);
+  const dockRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      dockObserver.current?.disconnect();
+      dockObserver.current = null;
+      dockEl.current = el;
+      if (el) {
+        dockObserver.current = new ResizeObserver(measureDock);
+        dockObserver.current.observe(el);
+      }
+      measureDock();
+    },
+    [measureDock],
+  );
   useEffect(() => () => dockObserver.current?.disconnect(), []);
 
   // …and below the title (which shrinks after the name step).
@@ -734,6 +776,11 @@ export default function GameExperience() {
     setModal({ kind: "player", song: current.song });
   };
 
+  const onShare = () => {
+    const current = ticketRef.current;
+    if (current) setModal({ kind: "share", ticket: current });
+  };
+
   const onSave = async () => {
     const current = ticketRef.current;
     if (!current || savingRef.current) return;
@@ -763,7 +810,7 @@ export default function GameExperience() {
   else if (status.kind === "error") line = "앗, 서버에 연결하지 못했어.\n잠시 후에 다시 연결해 줘.";
   else if (phase === "waiting") line = "복주머니는 2027년 1월 1일에 열려양.\n그때 꼭 다시 와 줘!";
   else if (phase === "closed") line = "올해의 복주머니는 마감됐어양.\n내년에 또 만나!";
-  else line = "어떤 이름으로 불러줄까양?\n네 첫 곡과 새해 덕담을 담아 왔어.";
+  else line = "어떤 이름으로 불러줄꺼양?";
 
   const submitLabel = busy
     ? "확인하는 중…"
@@ -864,14 +911,17 @@ export default function GameExperience() {
               canRedraw={canDraw}
               onListen={onListen}
               onSave={() => void onSave()}
+              onShare={onShare}
               onRedraw={chooseAgain}
             />
-          ) : (
-            <DialogBox speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef}>
-              {step === "name" ? (
-                <Form onSubmit={onSubmit} noValidate aria-busy={busy}>
-                  <label htmlFor="visitorName">이름 또는 별명</label>
-                  <Row>
+          ) : step === "name" ? (
+            <NameStep>
+              <SpeechBubble speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef} />
+              <Form onSubmit={onSubmit} noValidate aria-busy={busy}>
+                <label htmlFor="visitorName" className="visually-hidden">
+                  이름 또는 별명
+                </label>
+                <Row>
                     <NameInput
                       ref={inputRef}
                       id="visitorName"
@@ -899,19 +949,18 @@ export default function GameExperience() {
                       {submitLabel}
                     </PixelButton>
                   </Row>
-                  <Note id="modeNote">{note}</Note>
+                  <FloatNote id="modeNote">{note}</FloatNote>
                 </Form>
-              ) : (
-                <>
-                  <HopePicker disabled={!canDraw} chosen={hope} firstRef={firstHopeRef} onPick={(key) => void openBag(key)} />
-                  <Buttons>
-                    <PixelButton type="button" $tone="paper" $small onClick={changeName} disabled={busy}>
-                      이름 바꾸기
-                    </PixelButton>
-                    <Note aria-live="polite">{busy ? "복주머니 여는 중…" : "소망을 고르면 복주머니가 열려요."}</Note>
-                  </Buttons>
-                </>
-              )}
+            </NameStep>
+          ) : (
+            <DialogBox speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef}>
+              <HopePicker disabled={!canDraw} chosen={hope} firstRef={firstHopeRef} onPick={(key) => void openBag(key)} />
+              <Buttons>
+                <PixelButton type="button" $tone="paper" $small onClick={changeName} disabled={busy}>
+                  이름 바꾸기
+                </PixelButton>
+                <Note aria-live="polite">{busy ? "복주머니 여는 중…" : "소망을 고르면 복주머니가 열려요."}</Note>
+              </Buttons>
             </DialogBox>
           )}
         </Dock>
@@ -919,6 +968,13 @@ export default function GameExperience() {
 
       {modal?.kind === "player" && <PlayerDialog song={modal.song} onClose={() => setModal(null)} />}
       {modal?.kind === "help" && <HelpDialog onClose={() => setModal(null)} />}
+      {modal?.kind === "share" && (
+        <ShareDialog
+          song={modal.ticket.song}
+          pick={{ songIndex: modal.ticket.songIndex, blessingIndex: modal.ticket.blessingIndex, hope: modal.ticket.hope }}
+          onClose={() => setModal(null)}
+        />
+      )}
 
       <Toast role="status" aria-live="polite" $visible={toast.visible}>
         {toast.message}

@@ -139,8 +139,9 @@ export function searchScale(vp: Viewport): number {
  */
 export function reservedBands(vp: Viewport, bottomInset = 0, topInset = 0): { top: number; bottom: number } {
   const base = vp.width <= 740 ? { top: vp.height * 0.25, bottom: vp.height * 0.44 } : { top: vp.height <= 720 ? 190 : vp.height <= 960 ? 260 : 290, bottom: 340 };
-  // Measured title / dialog edges win over the defaults when they are known.
-  return { top: topInset > 0 ? topInset + 10 : base.top, bottom: Math.max(base.bottom, bottomInset > 0 ? bottomInset + 16 : 0) };
+  // Measured title / dialog edges win over the defaults when they are known (a short dialog,
+  // like the name bubble, gives the sheep more room instead of leaving empty meadow below it).
+  return { top: topInset > 0 ? topInset + 10 : base.top, bottom: bottomInset > 0 ? bottomInset + 16 : base.bottom };
 }
 
 function freeBand(vp: Viewport, bottomInset: number, topInset = 0) {
@@ -156,10 +157,15 @@ export function closeScale(vp: Viewport, bottomInset = 0, topInset = 0): number 
   return Math.max(2, k);
 }
 
-/** Where the hero's centre sits on screen (fraction of the height from the top). */
+/**
+ * Where the hero's centre sits on screen (fraction of the height from the top). The sheep stands
+ * just above the dialog, so the speech bubble's tail points right at it; spare room goes to the sky.
+ */
 export function heroScreenY(vp: Viewport, bottomInset = 0, topInset = 0): number {
   const { top, band } = freeBand(vp, bottomInset, topInset);
-  return (top + band / 2) / vp.height;
+  const h = closeScale(vp, bottomInset, topInset) * HERO_H;
+  const gap = Math.min(12, Math.max(0, band - h) / 2);
+  return (top + band - gap - h / 2) / vp.height;
 }
 
 /** Wide shot with the horizon about 30% from the top (a bit of night sky, mostly flock). */

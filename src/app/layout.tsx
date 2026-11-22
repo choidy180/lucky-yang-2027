@@ -15,12 +15,27 @@ const pixel = localFont({
   adjustFontFallback: false,
 });
 
+// Absolute base for link-preview images: an explicit site URL, else Vercel's production domain.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3027");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "올해 첫 곡은 뭐양? · 복주머니 레코드",
   description: "새벽 초원의 붉은 양에게 이름을 알려 주고, 복주머니를 열어 2027년 새해 첫 곡과 덕담을 받아 보세요.",
   referrer: "strict-origin-when-cross-origin",
   icons: { icon: "/assets/yang.png" },
   formatDetection: { telephone: false },
+  // Link previews in messengers. On Vercel, Next.js resolves these against the production URL.
+  openGraph: {
+    title: "올해 첫 곡은 뭐양? · 복주머니 레코드",
+    description: "새벽 초원의 붉은 양을 찾아 복주머니를 열고, 2027년 새해 첫 곡과 덕담을 받아 보세요.",
+    type: "website",
+    locale: "ko_KR",
+    images: [{ url: "/assets/yang.png", width: 1254, height: 1254 }],
+  },
+  twitter: { card: "summary", images: ["/assets/yang.png"] },
 };
 
 export const viewport: Viewport = {

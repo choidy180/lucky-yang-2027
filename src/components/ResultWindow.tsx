@@ -126,6 +126,9 @@ const Actions = styled.div`
   & > :first-child {
     flex: 1 1 200px;
   }
+  & > :not(:first-child) {
+    flex: 1 1 auto;
+  }
 `;
 
 const Again = styled.div`
@@ -155,10 +158,11 @@ interface ResultWindowProps {
   titleRef: Ref<HTMLHeadingElement>;
   onListen: (event: MouseEvent<HTMLButtonElement>) => void;
   onSave: () => void;
+  onShare: () => void;
   onRedraw: () => void;
 }
 
-export default function ResultWindow({ ticket, hopeLabel, showRedraw, canRedraw, busy, saving, titleRef, onListen, onSave, onRedraw }: ResultWindowProps) {
+export default function ResultWindow({ ticket, hopeLabel, showRedraw, canRedraw, busy, saving, titleRef, onListen, onSave, onShare, onRedraw }: ResultWindowProps) {
   return (
     <Window as="section" aria-label="새해 첫 곡 결과" aria-busy={busy}>
       <SongInfo>
@@ -182,6 +186,9 @@ export default function ResultWindow({ ticket, hopeLabel, showRedraw, canRedraw,
         </PixelButton>
         <PixelButton type="button" $tone="paper" onClick={onSave} disabled={busy || saving} aria-busy={saving}>
           {saving ? "티켓 만드는 중…" : "티켓 저장"}
+        </PixelButton>
+        <PixelButton type="button" $tone="paper" onClick={onShare} disabled={busy}>
+          친구에게 공유
         </PixelButton>
       </Actions>
       {showRedraw && (
