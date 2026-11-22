@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lucky-yang-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--port", "3027"],
+      "port": 3027
+    },
+    {
+      "name": "lucky-yang-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "start", "--port", "3028"],
+      "port": 3028
+    }
+  ]
+}

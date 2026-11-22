@@ -1,0 +1,31 @@
+// 서버 추첨과 이전 티켓 호환의 기준 데이터입니다.
+// 순서·문자열·영상 ID(대소문자, 밑줄 포함)를 바꾸면 기존 브라우저의 저장 결과가 폐기됩니다.
+export const songs = [
+  {"title":"이루리","artist":"우주소녀","videoId":"2Q9G6R2hKIQ"},
+  {"title":"한 페이지가 될 수 있게","artist":"DAY6","videoId":"vnS_jn2uibs"},
+  {"title":"오르트구름","artist":"윤하","videoId":"bfXsQ9k9PtY"},
+  {"title":"행운을 빌어요","artist":"페퍼톤스","videoId":"0bUBmYNIwnE"},
+  {"title":"시작","artist":"가호","videoId":"O0StKlRHVeE"},
+  {"title":"개화","artist":"LUCY","videoId":"2-P-NIiLiQc"},
+  {"title":"다시 만난 세계","artist":"소녀시대","videoId":"0k2Zzkw_-0I"},
+  {"title":"파이팅 해야지 (Feat. 이영지)","artist":"부석순","videoId":"xj5XzCBCwsc"},
+  {"title":"I AM","artist":"IVE","videoId":"6ZUIwj3FgUY"},
+  {"title":"좋은 날","artist":"아이유","videoId":"jeqdYqsrsA0"},
+  {"title":"여행","artist":"볼빨간사춘기","videoId":"xRbPAVnqtcs"},
+  {"title":"후라이의 꿈","artist":"AKMU","videoId":"3kGAlp_PNUg"},
+  {"title":"I (Feat. 버벌진트)","artist":"태연","videoId":"4OrCA1OInoo"},
+  {"title":"수고했어, 오늘도","artist":"옥상달빛","videoId":"U3e4AOd-DzE"},
+  {"title":"걱정말아요 그대","artist":"이적","videoId":"Dic27EnDDls"},
+  {"title":"Hello Future","artist":"NCT DREAM","videoId":"QPUjV7epJqE"},
+  {"title":"괜찮아요","artist":"비투비","videoId":"SNpuKLfv1EE"},
+  {"title":"봄날","artist":"방탄소년단","videoId":"xEeFrLSkMm8"},
+  {"title":"행복 (Happiness)","artist":"Red Velvet","videoId":"JFgv8bKfxEs"},
+  {"title":"별 보러 가자","artist":"적재","videoId":"V6YLhXN6OCs"},
+  {"title":"슈퍼스타","artist":"이한철","videoId":"zvezaGtFOok"},
+  {"title":"나무","artist":"카더가든","videoId":"cHkDZ1ekB9U"},
+  {"title":"아주 NICE","artist":"세븐틴","videoId":"KvA9T3MputA"},
+  {"title":"옥탑방","artist":"엔플라잉","videoId":"VpaUh_BGqE0"},
+  {"title":"Dolphin","artist":"오마이걸","videoId":"bac9H_DxQ6g"},
+  {"title":"Beautiful Beautiful","artist":"온앤오프","videoId":"RCqyyzmma4s"},
+  {"title":"Welcome to the Show","artist":"DAY6","videoId":"RowlrvmyFEk"}
+] as const;
