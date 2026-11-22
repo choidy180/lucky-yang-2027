@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useId, useRef, type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useId, useRef, useState, type FocusEvent, type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import styled from "styled-components";
-import { DESKTOP, colors } from "@/styles/global";
+import { DESKTOP, MOBILE, colors } from "@/styles/global";
 import { pixelFrame } from "./pixel";
 
 const Dialog = styled.dialog`
   width: min(560px, calc(100% - 40px));
   max-width: none;
+  /* first line: browsers (some in-app WebViews) that drop the whole min() when dvh is unknown */
+  max-height: calc(100% - 40px);
   max-height: min(84dvh, calc(100% - 40px));
   padding: 0;
   overflow: auto;
@@ -21,6 +23,18 @@ const Dialog = styled.dialog`
 
   &::backdrop {
     background: rgba(12, 10, 30, 0.6);
+  }
+
+  /* Phones: pinned near the top, so a keyboard or an in-app browser's toolbar at the bottom never
+     hides the header and the first fields. */
+  ${MOBILE} {
+    width: calc(100% - 24px);
+    margin: calc(env(safe-area-inset-top) + 12px) auto auto;
+    max-height: calc(100% - 24px);
+  }
+  /* Typing on a phone: only the part above the keyboard is used (height set from script). */
+  &[data-typing="true"] {
+    max-height: var(--above-keyboard, 50vh);
   }
 `;
 
@@ -101,9 +115,55 @@ interface ModalProps {
  * Native modal dialog. Content exists only while mounted, so closing (button, Esc, backdrop)
  * removes it — for the player that stops the sound. Focus returns to the element that opened it.
  */
+const isField = (el: EventTarget | null): el is HTMLElement =>
+  el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA");
+
 export default function Modal({ title, onClose, children }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const [typing, setTyping] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Phone keyboards: in-app browsers often lay the keyboard over the page without resizing it, so
+  // the dialog shrinks to the area above it and scrolls the focused field into view.
+  const fitAboveKeyboard = () => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const vv = window.visualViewport;
+    const shrunk = vv && vv.height < window.innerHeight - 80; // the browser reports the keyboard
+    const height = shrunk ? vv.height - 24 : window.innerHeight * 0.5;
+    dialog.style.setProperty("--above-keyboard", `${Math.max(200, Math.round(height))}px`);
+  };
+
+  const onFocusIn = (event: FocusEvent<HTMLDialogElement>) => {
+    if (!isField(event.target) || !window.matchMedia("(pointer: coarse)").matches) return;
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    fitAboveKeyboard();
+    setTyping(true);
+    const field = event.target;
+    setTimeout(() => {
+      fitAboveKeyboard();
+      field.scrollIntoView({ block: "nearest" });
+    }, 320); // after the keyboard has slid in
+  };
+
+  const onFocusOut = () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    blurTimer.current = setTimeout(() => {
+      if (!isField(document.activeElement) || !ref.current?.contains(document.activeElement)) setTyping(false);
+    }, 200);
+  };
+
+  useEffect(() => {
+    if (!typing) return;
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", fitAboveKeyboard);
+    return () => vv?.removeEventListener("resize", fitAboveKeyboard);
+  }, [typing]);
+
+  useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+  }, []);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -129,7 +189,15 @@ export default function Modal({ title, onClose, children }: ModalProps) {
   };
 
   return (
-    <Dialog ref={ref} aria-labelledby={titleId} onCancel={onCancel} onClick={onBackdrop}>
+    <Dialog
+      ref={ref}
+      aria-labelledby={titleId}
+      onCancel={onCancel}
+      onClick={onBackdrop}
+      onFocus={onFocusIn}
+      onBlur={onFocusOut}
+      data-typing={typing}
+    >
       <Head>
         <h2 id={titleId}>{title}</h2>
         <Close type="button" onClick={onClose} aria-label="닫기">

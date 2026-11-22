@@ -67,9 +67,14 @@ function loadSdk(): Promise<KakaoSdk> {
   return loading;
 }
 
-/** Builds the KakaoTalk card: sender + song as the title, the message as the description. */
-export function kakaoFeed(opts: { url: string; imageUrl: string; songTitle: string; from: string; message: string }): KakaoFeed {
+/**
+ * Builds the KakaoTalk card: sender + song as the title, the message as the description, and two
+ * buttons that bring the friend to the site (their friend's song, or their own draw).
+ * Links only open when their domain is registered for the app in Kakao Developers (제품 링크 관리).
+ */
+export function kakaoFeed(opts: { url: string; homeUrl: string; imageUrl: string; songTitle: string; from: string; message: string }): KakaoFeed {
   const link = { mobileWebUrl: opts.url, webUrl: opts.url };
+  const home = { mobileWebUrl: opts.homeUrl, webUrl: opts.homeUrl };
   return {
     objectType: "feed",
     content: {
@@ -80,7 +85,10 @@ export function kakaoFeed(opts: { url: string; imageUrl: string; songTitle: stri
       imageHeight: 630,
       link,
     },
-    buttons: [{ title: "첫 곡 확인하기", link }],
+    buttons: [
+      { title: "첫 곡 확인하기", link },
+      { title: "나도 첫 곡 받기", link: home },
+    ],
   };
 }
 

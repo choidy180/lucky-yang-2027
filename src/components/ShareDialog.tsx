@@ -154,7 +154,7 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
   // Opens KakaoTalk's friend picker (also inside KakaoTalk's in-app browser).
   const onKakao = async () => {
     try {
-      await sendKakaoShare(kakaoFeed({ url, imageUrl: `${origin}/og.png`, songTitle: song.title, from: note.from, message: note.message }));
+      await sendKakaoShare(kakaoFeed({ url, homeUrl: `${origin}/`, imageUrl: `${origin}/og.png`, songTitle: song.title, from: note.from, message: note.message }));
       setStatus("카카오톡에서 받을 친구나 채팅방을 골라 주세요.");
     } catch {
       setStatus("카카오톡 공유를 열 수 없어요. 링크 복사로 보내 주세요.");

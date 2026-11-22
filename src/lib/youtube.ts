@@ -19,7 +19,8 @@ export interface YTNamespace {
   Player: new (
     element: HTMLElement,
     options: {
-      videoId: string;
+      /** omitted when attaching to an existing embed iframe (enablejsapi=1) */
+      videoId?: string;
       width?: string | number;
       height?: string | number;
       playerVars?: Record<string, string | number>;
