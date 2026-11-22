@@ -1,7 +1,8 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import { kakaoFeed, kakaoShareAvailable, prepareKakao, sendKakaoShare } from "@/lib/kakao";
 import { SHARE_FROM_MAX, SHARE_MESSAGE_MAX, normalizeNote, shareText, shareUrl, type SharedPick } from "@/lib/share";
 import type { Song } from "@/lib/types";
 import { DESKTOP, colors } from "@/styles/global";
@@ -79,6 +80,21 @@ const Buttons = styled.div`
   }
 `;
 
+/** KakaoTalk's own yellow, framed like the other pixel buttons; takes a whole row. */
+const KakaoButton = styled(PixelButton)`
+  flex-basis: 100% !important;
+  background: #fee500;
+  color: #191919;
+  text-shadow: none;
+  box-shadow:
+    0 -4px 0 0 ${colors.ink},
+    0 4px 0 0 ${colors.ink},
+    -4px 0 0 0 ${colors.ink},
+    4px 0 0 0 ${colors.ink},
+    inset 0 -6px 0 0 #d9c300,
+    inset 0 4px 0 0 #fff38a;
+`;
+
 const Status = styled.p`
   min-height: 1.6em;
   margin: 12px 0 0 !important;
@@ -107,6 +123,7 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
   // Mounted only after a click, so window is available.
   const [origin] = useState(() => window.location.origin);
   const [canShare] = useState(() => typeof navigator.share === "function");
+  const [canKakao] = useState(kakaoShareAvailable);
   const [from, setFrom] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
@@ -114,6 +131,11 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
   const fallbackRef = useRef<HTMLInputElement>(null);
   const fromId = useId();
   const messageId = useId();
+
+  // Get the Kakao SDK ready while the visitor writes, so the tap opens KakaoTalk at once.
+  useEffect(() => {
+    if (canKakao) prepareKakao().catch(() => {});
+  }, [canKakao]);
 
   const note = useMemo(() => normalizeNote({ from, message }), [from, message]);
   const url = shareUrl(origin, pick, note);
@@ -126,6 +148,16 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return; // closed the sheet
       void onCopy();
+    }
+  };
+
+  // Opens KakaoTalk's friend picker (also inside KakaoTalk's in-app browser).
+  const onKakao = async () => {
+    try {
+      await sendKakaoShare(kakaoFeed({ url, imageUrl: `${origin}/og.png`, songTitle: song.title, from: note.from, message: note.message }));
+      setStatus("카카오톡에서 받을 친구나 채팅방을 골라 주세요.");
+    } catch {
+      setStatus("카카오톡 공유를 열 수 없어요. 링크 복사로 보내 주세요.");
     }
   };
 
@@ -173,12 +205,17 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
         />
       </Field>
       <Buttons>
+        {canKakao && (
+          <KakaoButton type="button" onClick={() => void onKakao()}>
+            카카오톡으로 보내기
+          </KakaoButton>
+        )}
         {canShare && (
           <PixelButton type="button" onClick={() => void onShare()}>
             공유하기
           </PixelButton>
         )}
-        <PixelButton type="button" $tone={canShare ? "paper" : "red"} onClick={() => void onCopy()}>
+        <PixelButton type="button" $tone={canShare || canKakao ? "paper" : "red"} onClick={() => void onCopy()}>
           링크 복사
         </PixelButton>
       </Buttons>
@@ -186,7 +223,10 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
         {status}
       </Status>
       {showLink && <Fallback ref={fallbackRef} readOnly value={url} aria-label="공유 링크" onFocus={(e) => e.currentTarget.select()} />}
-      <DialogNote>친구는 링크에서 곡, 덕담, 메시지를 볼 수 있어요. 메시지는 링크 안에만 담기고 서버에는 저장되지 않아요.</DialogNote>
+      <DialogNote>
+        친구는 링크에서 곡, 덕담, 메시지를 볼 수 있어요. 메시지는 링크 안에만 담기고 이 사이트 서버에는 저장되지 않아요
+        {canKakao ? "(카카오톡으로 보내면 카카오톡 카드에도 담겨요)." : "."}
+      </DialogNote>
     </Modal>
   );
 }
