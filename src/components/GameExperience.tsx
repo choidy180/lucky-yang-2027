@@ -365,6 +365,8 @@ export default function GameExperience() {
   const [typing, setTyping] = useState(false);
   const typingRef = useRef(false);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** The (tall, phone) result panel reaches up over the title: hide the title and the bubble tail. */
+  const [crowded, setCrowded] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hotspotRef = useRef<HTMLButtonElement>(null);
@@ -500,11 +502,22 @@ export default function GameExperience() {
   // The camera keeps the red sheep clear of the dialog/result window, whatever its height.
   const dockObserver = useRef<ResizeObserver | null>(null);
   const dockEl = useRef<HTMLDivElement | null>(null);
+  const checkCrowded = useCallback(() => {
+    const dock = dockEl.current;
+    const title = titleEl.current;
+    if (!dock || !title || typingRef.current) {
+      setCrowded(false);
+      return;
+    }
+    setCrowded(dock.getBoundingClientRect().top < title.getBoundingClientRect().bottom + 8);
+  }, []);
+
   const measureDock = useCallback(() => {
     if (typingRef.current) return; // the panel is at the top for the keyboard; keep the framing
     const el = dockEl.current;
     engineRef.current?.setBottomInset(el ? window.innerHeight - el.getBoundingClientRect().top : 0);
-  }, []);
+    checkCrowded();
+  }, [checkCrowded]);
   const dockRef = useCallback(
     (el: HTMLDivElement | null) => {
       dockObserver.current?.disconnect();
@@ -519,6 +532,11 @@ export default function GameExperience() {
     [measureDock],
   );
   useEffect(() => () => dockObserver.current?.disconnect(), []);
+  // A taller or shorter screen moves the panel without resizing it (rotation, browser bars).
+  useEffect(() => {
+    window.addEventListener("resize", measureDock);
+    return () => window.removeEventListener("resize", measureDock);
+  }, [measureDock]);
 
   // …and below the title (which shrinks after the name step).
   const titleEl = useRef<HTMLElement | null>(null);
@@ -526,7 +544,8 @@ export default function GameExperience() {
   const measureTitle = useCallback(() => {
     const el = titleEl.current;
     engineRef.current?.setTopInset(el ? el.getBoundingClientRect().bottom : 0);
-  }, []);
+    checkCrowded();
+  }, [checkCrowded]);
   const titleRef = useCallback(
     (el: HTMLElement | null) => {
       titleObserver.current?.disconnect();
@@ -961,7 +980,7 @@ export default function GameExperience() {
         )}
       </Hud>
 
-      {(introStage === "title" || introStage === "done") && <TitleBanner compact={step !== "name"} hidden={typing && step === "name"} wrapRef={titleRef} />}
+      {(introStage === "title" || introStage === "done") && <TitleBanner compact={step !== "name"} hidden={(typing && step === "name") || crowded} wrapRef={titleRef} />}
 
       {introStage === "ready" && narrating && <Narration instant={instantText} onDone={endNarration} onGesture={unlockAudio} />}
 
@@ -972,9 +991,9 @@ export default function GameExperience() {
       )}
 
       {introDone && (
-        <Dock ref={dockRef} $top={typing && step === "name"}>
+        <Dock ref={dockRef} $top={typing && step === "name"} $tall={step === "result"}>
           {step === "result" && ticket ? (
-            <BubbleStep>
+            <BubbleStep $noTail={crowded}>
               <SpeechBubble speaker="붉은 양" text={`짜잔! ${ticket.name}의 새해 첫 곡이 나왔양.`} instant={instantText} headingRef={speakerRef} />
               <ResultWindow
                 ticket={ticket}

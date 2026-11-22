@@ -153,6 +153,16 @@ const Actions = styled.div`
   & > :not(:first-child) {
     flex: 1 1 auto;
   }
+  /* phones: "첫 곡 듣기" on its own row, "티켓 저장" and "친구에게 공유" side by side below */
+  ${MOBILE} {
+    & > :first-child {
+      flex-basis: 100%;
+    }
+    & > :not(:first-child) {
+      flex: 1 1 0;
+      padding-inline: 10px;
+    }
+  }
 `;
 
 const Again = styled.div`

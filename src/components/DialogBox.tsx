@@ -9,14 +9,17 @@ import { bodyText } from "./pixel";
 /**
  * The conversation panel at the bottom. `$top` lifts it under the HUD while the phone keyboard is
  * up for the name input: in-app browsers often lay the keyboard over the page without resizing
- * it, so a bottom panel would hide what is being typed.
+ * it, so a bottom panel would hide what is being typed. `$tall` (the result) may grow up to the HUD
+ * on phones so the whole card shows; the title and the sheep behind it give way.
  */
-export const Dock = styled.div<{ $top?: boolean }>`
+export const Dock = styled.div<{ $top?: boolean; $tall?: boolean }>`
   position: fixed;
   z-index: 10;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 24px);
   width: min(760px, calc(100% - 40px));
+  /* vh first: some in-app WebViews drop a declaration that uses dvh */
+  max-height: calc(100vh - env(safe-area-inset-bottom) - 120px);
   max-height: calc(100dvh - env(safe-area-inset-bottom) - 120px);
   transform: translateX(-50%);
   display: flex;
@@ -25,9 +28,20 @@ export const Dock = styled.div<{ $top?: boolean }>`
   ${MOBILE} {
     width: calc(100% - 32px);
     bottom: calc(env(safe-area-inset-bottom) + 20px);
-    /* leave the title and the red sheep at least ~320px; a taller result card scrolls instead */
+    /* leave the title and the red sheep at least ~320px; a taller panel scrolls instead */
+    max-height: calc(100vh - env(safe-area-inset-bottom) - 320px);
     max-height: calc(100dvh - env(safe-area-inset-bottom) - 320px);
   }
+
+  ${({ $tall }) =>
+    $tall &&
+    css`
+      ${MOBILE} {
+        /* up to just under the HUD buttons */
+        max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 84px);
+        max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 84px);
+      }
+    `}
 
   ${({ $top }) =>
     $top &&
