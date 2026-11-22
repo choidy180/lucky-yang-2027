@@ -32,9 +32,9 @@ const Dialog = styled.dialog`
     margin: calc(env(safe-area-inset-top) + 12px) auto auto;
     max-height: calc(100% - 24px);
   }
-  /* Typing on a phone: only the part above the keyboard is used (height set from script). */
+  /* Typing on a phone: use all of the screen above the keyboard (height set from script). */
   &[data-typing="true"] {
-    max-height: var(--above-keyboard, 50vh);
+    max-height: var(--above-keyboard, calc(100% - 24px));
   }
 `;
 
@@ -123,16 +123,26 @@ export default function Modal({ title, onClose, children }: ModalProps) {
   const titleId = useId();
   const [typing, setTyping] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Page height before any keyboard showed up. */
+  const baseHeight = useRef(0);
 
-  // Phone keyboards: in-app browsers often lay the keyboard over the page without resizing it, so
-  // the dialog shrinks to the area above it and scrolls the focused field into view.
+  // Phone keyboards: the dialog keeps all the height that is left above the keyboard (only the
+  // keyboard's share is taken away) and scrolls the focused field to its top. Browsers report the
+  // keyboard in one of three ways:
+  //  - the page itself gets shorter (KakaoTalk's in-app browser): the usual 100% - 24px already fits;
+  //  - only the visual viewport gets shorter (Safari, Chrome): use that height;
+  //  - nothing changes (keyboard laid over the page): assume it takes about 40% of the screen.
   const fitAboveKeyboard = () => {
     const dialog = ref.current;
     if (!dialog) return;
     const vv = window.visualViewport;
-    const shrunk = vv && vv.height < window.innerHeight - 80; // the browser reports the keyboard
-    const height = shrunk ? vv.height - 24 : window.innerHeight * 0.5;
-    dialog.style.setProperty("--above-keyboard", `${Math.max(200, Math.round(height))}px`);
+    const inner = window.innerHeight;
+    const base = Math.max(baseHeight.current, inner);
+    let height: number | null;
+    if (vv && vv.height < inner - 80) height = vv.height - 24;
+    else if (inner < base - 120) height = null;
+    else height = base * 0.6 - 24;
+    dialog.style.setProperty("--above-keyboard", height === null ? "calc(100% - 24px)" : `${Math.max(240, Math.round(height))}px`);
   };
 
   const onFocusIn = (event: FocusEvent<HTMLDialogElement>) => {
@@ -143,8 +153,9 @@ export default function Modal({ title, onClose, children }: ModalProps) {
     const field = event.target;
     setTimeout(() => {
       fitAboveKeyboard();
-      field.scrollIntoView({ block: "nearest" });
-    }, 320); // after the keyboard has slid in
+      // field at the top (under the sticky header), so what follows it — the send buttons — shows
+      field.scrollIntoView({ block: "start" });
+    }, 350); // after the keyboard has slid in
   };
 
   const onFocusOut = () => {
@@ -155,10 +166,18 @@ export default function Modal({ title, onClose, children }: ModalProps) {
   };
 
   useEffect(() => {
+    baseHeight.current = window.innerHeight;
+  }, []);
+
+  useEffect(() => {
     if (!typing) return;
     const vv = window.visualViewport;
     vv?.addEventListener("resize", fitAboveKeyboard);
-    return () => vv?.removeEventListener("resize", fitAboveKeyboard);
+    window.addEventListener("resize", fitAboveKeyboard);
+    return () => {
+      vv?.removeEventListener("resize", fitAboveKeyboard);
+      window.removeEventListener("resize", fitAboveKeyboard);
+    };
   }, [typing]);
 
   useEffect(() => () => {

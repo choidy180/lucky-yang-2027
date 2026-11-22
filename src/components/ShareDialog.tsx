@@ -21,6 +21,11 @@ const Song = styled.p`
     -2px 0 0 0 ${colors.paperShade},
     2px 0 0 0 ${colors.paperShade};
   overflow-wrap: anywhere;
+
+  /* Typing on a phone (Modal sets data-typing): room goes to the fields and the send buttons. */
+  dialog[data-typing="true"] & {
+    display: none;
+  }
 `;
 
 const Field = styled.div`
@@ -67,6 +72,18 @@ const Field = styled.div`
   textarea::placeholder {
     color: #b39b8c;
   }
+  /* scrolled to the top of the dialog when focused: keep the label visible under the header */
+  input,
+  textarea {
+    scroll-margin-top: 104px;
+  }
+
+  dialog[data-typing="true"] & {
+    margin-bottom: 10px;
+  }
+  dialog[data-typing="true"] & textarea {
+    min-height: 3.4em;
+  }
 `;
 
 const Buttons = styled.div`
@@ -77,6 +94,14 @@ const Buttons = styled.div`
   padding: 4px;
   & > * {
     flex: 1 1 160px;
+  }
+
+  dialog[data-typing="true"] & {
+    gap: 10px 12px;
+    margin-top: 10px;
+  }
+  dialog[data-typing="true"] & > * {
+    min-height: 40px;
   }
 `;
 
@@ -93,6 +118,16 @@ const KakaoButton = styled(PixelButton)`
     4px 0 0 0 ${colors.ink},
     inset 0 -6px 0 0 #d9c300,
     inset 0 4px 0 0 #fff38a;
+
+  dialog[data-typing="true"] & {
+    min-height: 48px;
+  }
+`;
+
+const Note = styled(DialogNote)`
+  dialog[data-typing="true"] & {
+    display: none;
+  }
 `;
 
 const Status = styled.p`
@@ -223,10 +258,10 @@ export default function ShareDialog({ song, pick, onClose }: ShareDialogProps) {
         {status}
       </Status>
       {showLink && <Fallback ref={fallbackRef} readOnly value={url} aria-label="공유 링크" onFocus={(e) => e.currentTarget.select()} />}
-      <DialogNote>
+      <Note>
         친구는 링크에서 곡, 덕담, 메시지를 볼 수 있어요. 메시지는 링크 안에만 담기고 이 사이트 서버에는 저장되지 않아요
         {canKakao ? "(카카오톡으로 보내면 카카오톡 카드에도 담겨요)." : "."}
-      </DialogNote>
+      </Note>
     </Modal>
   );
 }
