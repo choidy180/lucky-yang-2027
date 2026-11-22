@@ -218,7 +218,7 @@ const Note = styled.p`
  * Every conversation step: the sheep's bubble, then the answer right under it (name row, wish
  * choices, or the result card). The last part shrinks and scrolls when the screen is short.
  */
-const BubbleStep = styled.div`
+const BubbleStep = styled.div<{ $noTail?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -240,6 +240,15 @@ const BubbleStep = styled.div`
   form > div > button {
     flex: none;
   }
+  /* at the top of the screen (keyboard up) the tail would point at the HUD */
+  ${({ $noTail }) =>
+    $noTail &&
+    css`
+      & > section::before,
+      & > section::after {
+        display: none;
+      }
+    `}
 `;
 
 const Answer = styled.div`
@@ -352,6 +361,10 @@ export default function GameExperience() {
   const [toast, setToast] = useState({ message: "", visible: false });
   const [focusRequest, setFocusRequest] = useState<{ target: FocusTarget; seq: number } | null>(null);
   const [instantText, setInstantText] = useState(false);
+  /** Phone keyboard up for the name input: the name panel moves under the HUD (see Dock). */
+  const [typing, setTyping] = useState(false);
+  const typingRef = useRef(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hotspotRef = useRef<HTMLButtonElement>(null);
@@ -488,6 +501,7 @@ export default function GameExperience() {
   const dockObserver = useRef<ResizeObserver | null>(null);
   const dockEl = useRef<HTMLDivElement | null>(null);
   const measureDock = useCallback(() => {
+    if (typingRef.current) return; // the panel is at the top for the keyboard; keep the framing
     const el = dockEl.current;
     engineRef.current?.setBottomInset(el ? window.innerHeight - el.getBoundingClientRect().top : 0);
   }, []);
@@ -696,10 +710,35 @@ export default function GameExperience() {
     requestFocus("hope");
   }, [goStep, notify, refresh, requestFocus, showTicket]);
 
+  useEffect(() => {
+    if (step !== "name" && typingRef.current) setTypingNow(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+  useEffect(() => () => {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+  }, []);
+
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (composingRef.current) return;
     void submitName();
+  };
+
+  const setTypingNow = (value: boolean) => {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = null;
+    typingRef.current = value;
+    setTyping(value);
+  };
+
+  const onNameFocus = () => {
+    if (window.matchMedia("(pointer: coarse)").matches) setTypingNow(true);
+  };
+
+  // Late enough that a tap on "확인" lands before the panel moves back down.
+  const onNameBlur = () => {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => setTypingNow(false), 250);
   };
 
   const onNameChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -922,7 +961,7 @@ export default function GameExperience() {
         )}
       </Hud>
 
-      {(introStage === "title" || introStage === "done") && <TitleBanner compact={step !== "name"} wrapRef={titleRef} />}
+      {(introStage === "title" || introStage === "done") && <TitleBanner compact={step !== "name"} hidden={typing && step === "name"} wrapRef={titleRef} />}
 
       {introStage === "ready" && narrating && <Narration instant={instantText} onDone={endNarration} onGesture={unlockAudio} />}
 
@@ -933,7 +972,7 @@ export default function GameExperience() {
       )}
 
       {introDone && (
-        <Dock ref={dockRef}>
+        <Dock ref={dockRef} $top={typing && step === "name"}>
           {step === "result" && ticket ? (
             <BubbleStep>
               <SpeechBubble speaker="붉은 양" text={`짜잔! ${ticket.name}의 새해 첫 곡이 나왔양.`} instant={instantText} headingRef={speakerRef} />
@@ -952,7 +991,7 @@ export default function GameExperience() {
               />
             </BubbleStep>
           ) : step === "name" ? (
-            <BubbleStep>
+            <BubbleStep $noTail={typing}>
               <SpeechBubble speaker="붉은 양" text={line} instant={instantText} headingRef={speakerRef} />
               <Form onSubmit={onSubmit} noValidate aria-busy={busy}>
                 <label htmlFor="visitorName" className="visually-hidden">
@@ -973,6 +1012,8 @@ export default function GameExperience() {
                     onCompositionEnd={() => {
                       composingRef.current = false;
                     }}
+                    onFocus={onNameFocus}
+                    onBlur={onNameBlur}
                     maxLength={NAME_MAX_LENGTH}
                     required
                     autoComplete="off"

@@ -2,11 +2,16 @@
 
 // The bottom dock and the red sheep speech bubble used by every conversation step.
 import { useEffect, useState, type Ref } from "react";
-import styled, { keyframes } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 import { DESKTOP, MOBILE, colors } from "@/styles/global";
 import { bodyText } from "./pixel";
 
-export const Dock = styled.div`
+/**
+ * The conversation panel at the bottom. `$top` lifts it under the HUD while the phone keyboard is
+ * up for the name input: in-app browsers often lay the keyboard over the page without resizing
+ * it, so a bottom panel would hide what is being typed.
+ */
+export const Dock = styled.div<{ $top?: boolean }>`
   position: fixed;
   z-index: 10;
   left: 50%;
@@ -23,6 +28,19 @@ export const Dock = styled.div`
     /* leave the title and the red sheep at least ~320px; a taller result card scrolls instead */
     max-height: calc(100dvh - env(safe-area-inset-bottom) - 320px);
   }
+
+  ${({ $top }) =>
+    $top &&
+    css`
+      top: calc(env(safe-area-inset-top) + 62px);
+      bottom: auto;
+      max-height: none;
+      ${MOBILE} {
+        top: calc(env(safe-area-inset-top) + 62px);
+        bottom: auto;
+        max-height: none;
+      }
+    `}
 `;
 
 /** Shows `text` one character at a time; clicking the line (or `instant`) completes it. */

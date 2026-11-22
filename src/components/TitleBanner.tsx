@@ -31,7 +31,7 @@ const outline = (color: string) => css`
     0 calc(var(--p) * 3) 0 ${color};
 `;
 
-const Wrap = styled.header<{ $compact: boolean }>`
+const Wrap = styled.header<{ $compact: boolean; $hidden: boolean }>`
   position: fixed;
   z-index: 5;
   left: 0;
@@ -48,6 +48,8 @@ const Wrap = styled.header<{ $compact: boolean }>`
     top: calc(env(safe-area-inset-top) + 58px);
   }
   transform-origin: top center;
+  /* hidden while the name panel sits at the top for the phone keyboard */
+  opacity: ${({ $hidden }) => ($hidden ? 0 : 1)};
   ${({ $compact }) =>
     $compact &&
     css`
@@ -104,10 +106,10 @@ const Sub = styled.p`
 
 const LINES: { text: string; accent?: boolean }[] = [{ text: "올해 첫 곡은" }, { text: "뭐양?", accent: true }];
 
-export default function TitleBanner({ compact, wrapRef }: { compact: boolean; wrapRef?: Ref<HTMLElement> }) {
+export default function TitleBanner({ compact, hidden = false, wrapRef }: { compact: boolean; hidden?: boolean; wrapRef?: Ref<HTMLElement> }) {
   let i = 0;
   return (
-    <Wrap ref={wrapRef} $compact={compact}>
+    <Wrap ref={wrapRef} $compact={compact} $hidden={hidden} aria-hidden={hidden || undefined}>
       <Title aria-label="올해 첫 곡은 뭐양?">
         {LINES.map((line) => (
           <span key={line.text} className={line.accent ? "line accent" : "line"} aria-hidden="true">

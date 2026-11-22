@@ -20,6 +20,20 @@ const Window = styled(PixelWindow)`
   overflow: auto;
   overscroll-behavior: contain;
   animation: ${pop} 0.32s steps(5) both;
+  /* This window scrolls on short phones. PixelWindow's bevel is an absolutely positioned
+     ::before that would scroll with the content and draw a stray line across the buttons, so the
+     bevel is an inset shadow here (painted on the box, it stays put). */
+  box-shadow:
+    0 -4px 0 0 ${colors.ink},
+    0 4px 0 0 ${colors.ink},
+    -4px 0 0 0 ${colors.ink},
+    4px 0 0 0 ${colors.ink},
+    0 12px 0 0 rgba(20, 10, 20, 0.45),
+    inset 0 4px 0 0 #ffffff,
+    inset 0 -4px 0 0 ${colors.paperShade};
+  &::before {
+    content: none;
+  }
 
   ${MOBILE} {
     padding: 14px 14px 14px;
