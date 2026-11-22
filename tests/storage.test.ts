@@ -99,3 +99,14 @@ describe("browser memory", () => {
     expect(readLastDraw("test", catalog, null)).toMatchObject({ songIndex: 4 });
   });
 });
+
+describe("the chosen wish", () => {
+  it("is kept with the last draw and an unknown one is discarded", () => {
+    const s = new MemoryStorage();
+    rememberDraw("test", { ...ticket(9, 7), hope: "love" }, s);
+    expect(readLastDraw("test", catalog, s)).toMatchObject({ songIndex: 9, hope: "love" });
+    const { name: _n, ...draw } = ticket(9, 7);
+    s.setItem(lastKey("test"), JSON.stringify({ ...draw, hope: "lottery" }));
+    expect(readLastDraw("test", catalog, s)).toBeNull();
+  });
+});

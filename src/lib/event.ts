@@ -1,6 +1,7 @@
 // Server-side event rules: mode, period, validation and the uniform draw.
 // Everything that depends on time, randomness or data can be injected for tests.
 import { blessings as BLESSINGS } from "@/data/blessings";
+import { findHope } from "@/data/hopes";
 import { songs as SONGS } from "@/data/songs";
 import { normalizeName, type EventMode, type EventPhase, type EventState, type Song, type Ticket } from "./types";
 
@@ -89,15 +90,34 @@ export interface DrawResult {
   blessing: string;
 }
 
-/** Song and blessing are drawn independently; each excludes only its own previous index. */
+/** Uniform pick from a list of indices, skipping the excluded one when another choice exists. */
+export function pickFrom(indices: readonly number[], length: number, exclude?: number, random: RandomInt = secureRandomInt): number {
+  const pool = [...new Set(indices)].filter((i) => Number.isInteger(i) && i >= 0 && i < length);
+  if (pool.length === 0) throw new EmptyPoolError();
+  const candidates = exclude !== undefined && pool.length > 1 && pool.includes(exclude) ? pool.filter((i) => i !== exclude) : pool;
+  return candidates[random(candidates.length)]!;
+}
+
+export interface HopePool {
+  readonly songs: readonly number[];
+  readonly blessings: readonly number[];
+}
+
+/**
+ * Song and blessing are drawn independently; each excludes only its own previous index.
+ * With a wish (hope), both come from the songs/blessings that suit it; otherwise from everything.
+ */
 export function drawFortune(
   previous: PreviousPick = {},
   random: RandomInt = secureRandomInt,
   songs: readonly Song[] = SONGS,
   blessings: readonly string[] = BLESSINGS,
+  hope?: HopePool,
 ): DrawResult {
-  const songIndex = pickIndex(songs.length, previous.songIndex, random);
-  const blessingIndex = pickIndex(blessings.length, previous.blessingIndex, random);
+  const songIndex = hope ? pickFrom(hope.songs, songs.length, previous.songIndex, random) : pickIndex(songs.length, previous.songIndex, random);
+  const blessingIndex = hope
+    ? pickFrom(hope.blessings, blessings.length, previous.blessingIndex, random)
+    : pickIndex(blessings.length, previous.blessingIndex, random);
   return { songIndex, blessingIndex, song: songs[songIndex]!, blessing: blessings[blessingIndex]! };
 }
 
@@ -134,7 +154,7 @@ export function handleEvent(options: HandlerOptions = {}): Response {
   return json(eventState(mode, now, options.songs, options.blessings));
 }
 
-async function readName(request: Request): Promise<string | null> {
+async function readBody(request: Request): Promise<{ name: unknown; hope: unknown } | null> {
   let text: string;
   try {
     text = await request.text();
@@ -149,7 +169,8 @@ async function readName(request: Request): Promise<string | null> {
     return null;
   }
   if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
-  return normalizeName((data as { name?: unknown }).name);
+  const { name, hope } = data as { name?: unknown; hope?: unknown };
+  return { name, hope };
 }
 
 export async function handleDraw(request: Request, options: HandlerOptions = {}): Promise<Response> {
@@ -160,9 +181,15 @@ export async function handleDraw(request: Request, options: HandlerOptions = {})
   if (phase !== "open") {
     return json({ error: "지금은 복주머니를 열 수 없어요.", phase }, 403);
   }
-  const name = await readName(request);
+  const body = await readBody(request);
+  const name = normalizeName(body?.name);
   if (!name) {
     return json({ error: "이름 또는 별명을 1~24자로 입력해 주세요." }, 400);
+  }
+  // The #1 wish is optional; when given it must be one of the listed ones.
+  const hope = body?.hope === undefined || body.hope === null ? undefined : findHope(body.hope);
+  if (body?.hope !== undefined && body.hope !== null && !hope) {
+    return json({ error: "소망을 다시 골라 주세요." }, 400);
   }
   // Re-draw exclusions are a test-mode convenience only.
   const url = new URL(request.url);
@@ -174,8 +201,8 @@ export async function handleDraw(request: Request, options: HandlerOptions = {})
         }
       : {};
   try {
-    const result = drawFortune(previous, options.random, options.songs, options.blessings);
-    const ticket: Ticket = { name, ...result };
+    const result = drawFortune(previous, options.random, options.songs, options.blessings, hope);
+    const ticket: Ticket = hope ? { name, ...result, hope: hope.key } : { name, ...result };
     return json(ticket);
   } catch (error) {
     if (error instanceof EmptyPoolError) {

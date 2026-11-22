@@ -29,6 +29,8 @@ export interface StoredDraw {
   blessingIndex: number;
   song: Song;
   blessing: string;
+  /** key of the chosen #1 wish (src/data/hopes.ts); absent in older saves */
+  hope?: string;
 }
 
 export interface Ticket extends StoredDraw {

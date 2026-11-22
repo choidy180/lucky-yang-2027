@@ -1,8 +1,16 @@
 # 올해 첫 곡은 뭐양? · 복주머니 레코드
 
-붉은 양이 눈을 세 번 깜빡이고, 고개를 한 번 끄덕이고, 무음으로 흥얼거리는 인사가 끝나면 이름을 입력하고 복주머니를 엽니다. 서버가 27곡 중 한 곡과 27개 덕담 중 하나를 각각 추첨하고, 공식 YouTube 영상으로 들을 수 있으며 이름이 들어간 900×1100 PNG 티켓을 저장할 수 있습니다.
+도트풍 게임처럼 진행되는 새해 음악 이벤트입니다. 밤 초원에 귀여운 양 110마리가 풀을 뜯고, 화면 아래에는 “올 한 해 정말 고생 많았어요” 같은 격려 한마디가 무작위로 뜹니다. 양떼 사이에 헤드폰을 낀 붉은 양이 숨어 있어서, PC에서는 클릭·휴대폰에서는 탭으로 찾아 누르면 전구가 뜨며 “띠링!” 소리가 나고 붉은 양이 언덕 위로 달려갑니다. 붉은 양 뒤로 붉은 해가 떠오르면 “올해 첫 곡은 뭐양?”이 나타나고, 이름을 알려 준 뒤 내년에 가장 바라는 1순위 소망을 고르면 복주머니가 열려 그 소망에 어울리는 곡과 덕담이 나옵니다. 공식 YouTube 영상으로 듣거나 이름과 소망이 들어간 900×1100 티켓 PNG를 저장할 수 있습니다.
 
-Next.js App Router · React · TypeScript(strict) · styled-components. DB, 회원가입, API 키가 필요 없습니다.
+Next.js App Router · React · TypeScript(strict) · styled-components · Canvas 2D · Web Audio. DB, 회원가입, API 키, 음원 파일이 필요 없습니다.
+
+## 진행 순서
+
+0. **나레이션 → 초원** — 텍스트 게임처럼 한 줄씩 타이핑되는 나레이션(무작위 격려 한마디 → 양들이 준비한 새해 선물 → 선물을 든 붉은 양이 양떼 속에 숨었다 → 헤드폰 낀 붉은 양을 찾아 달라)을 화면 클릭/탭 또는 Enter·Space로 넘깁니다. 끝나면 아래에 작은 안내만 남고, 붉은 양을 클릭/탭하면 시작합니다. 흰 양을 누르면 깡충 뛰고, 6초 동안 못 찾으면 붉은 양이 깡충거리며 힌트를 줍니다. `못 찾겠어요`(또는 Enter·Space)로 바로 찾을 수도 있습니다. 브라우저는 사용자가 한 번 눌러야 소리를 낼 수 있어서 이 첫 클릭이 효과음을 켭니다. 상단 `♪ ON/OFF`로 효과음을 끄고 켤 수 있고 이 브라우저에 기억됩니다.
+1. **발견 이후 (약 5.8초)** — 전구 + “띠링!” → 붉은 양이 양떼를 빠져나와 언덕으로 달려감(카메라가 따라감) → 반짝 연기와 함께 큰 모습으로 → 줌인, 뒤에서 붉은 해가 뜸 → 제목 → 대화창. 화면 클릭, `건너뛰기`, Enter·Space·Esc로 건너뜁니다. 해는 언덕 뒤로 반쯤 걸린 따뜻한 그라데이션이며 햇살 줄무늬는 일부러 넣지 않았습니다. 모션 감소 설정이면 0.3초 뒤 바로 대화창으로 갑니다.
+2. **이름** — 이름이나 별명(1~24자)을 입력하고 `확인`. 이때는 서버에 추첨 요청을 보내지 않습니다.
+3. **소망 + 복주머니** — 복주머니가 떨어지고 “내년에 가장 바라는 1순위 소망은 뭐야?” 8가지(건강·사랑·성공·여행·성장·쉼·새출발·함께) 중 하나를 고르면 주머니가 흔들리다 터집니다. 서버는 그 소망에 어울리는 곡·덕담 묶음(`src/data/hopes.ts`) 안에서 각각 균등 추첨합니다(`POST /api/draw` 본문의 `hope`).
+4. **결과** — 소망·곡·아티스트·덕담, `첫 곡 듣기`(YouTube 모달), `티켓 저장`(PNG), 테스트 모드의 `다른 소망 고르기`(다시 고르면 직전 곡·덕담은 제외). 상단 `처음부터`는 초원으로 돌아가며 이름과 결과는 그대로 남습니다.
 
 ## 실행
 
@@ -12,7 +20,7 @@ Node.js 20.9 이상(개발·검증은 Node 24에서 했습니다).
 npm install
 npm run dev        # http://localhost:3027 (개발 서버)
 npm run typecheck  # next typegen + tsc --noEmit
-npm test           # vitest: 추첨·기간 경계·API·저장·티켓 레이아웃·인트로 시간축
+npm test           # vitest: 추첨·기간 경계·API·저장·티켓 레이아웃·인트로/카메라·스프라이트·양떼
 npm run build
 npm start          # http://localhost:3027 (프로덕션 서버)
 ```
@@ -38,6 +46,7 @@ $env:EVENT_MODE='live'; npm start
 
 ## 곡·덕담 수정
 
+- 소망: `src/data/hopes.ts` — 소망마다 어울리는 곡·덕담의 인덱스 목록. 모든 곡과 덕담이 적어도 한 소망에 들어 있어야 합니다(테스트가 확인).
 - 곡: `src/data/songs.ts` — `{ title, artist, videoId }`. `videoId`는 YouTube 영상 ID 11자(대소문자·밑줄·하이픈 그대로).
 - 덕담: `src/data/blessings.ts`.
 
@@ -46,21 +55,28 @@ $env:EVENT_MODE='live'; npm start
 ## 구조
 
 ```text
-src/app/layout.tsx            한국어 문서, 메타데이터·viewport·테마색, styled-components 레지스트리
-src/app/page.tsx              서버 컴포넌트 진입점 (인트로 포스터가 초기 HTML에 포함)
+src/app/layout.tsx            한국어 문서, 메타데이터·viewport, 픽셀 글꼴(next/font/local), styled-components 레지스트리
+src/app/page.tsx              서버 컴포넌트 진입점
 src/app/api/event/route.ts    GET  현재 모드·기간·서버 시각·곡 메타데이터
 src/app/api/draw/route.ts     POST 이름 검증 + 균등 추첨 (테스트 재추첨은 ?song=&wish=)
-src/components/               NewYearExperience(흐름) · IntroPortrait · FortuneScene · DrawResult · PlayerDialog · HelpDialog · Modal
+src/game/sprites.ts           도트 스프라이트: 붉은 양(원화를 54×56으로 옮기고 큰 눈, 기본·눈감음·^^), 양떼용 작은 양(같은 얼굴, 털색 4가지, 헤드폰 없음)과 헤드폰 낀 작은 붉은 양, 전구, 복주머니·레코드(Scale2x)
+src/game/timeline.ts          인트로 시간표, 붉은 양의 이동 경로, 카메라(와이드→수색→발견→따라가기→클로즈업, 대화창 높이에 맞춘 재구성), 언덕 지형 — 순수 함수
+src/game/world.ts             양떼 110마리 시뮬레이션·탭 판정, 초원·산(밤/일출 캐시), 붉은 해, 전구·링·스포트라이트, 복주머니·파티클, 부드러운 하늘
+src/game/engine.ts            캔버스·애니메이션 루프·인트로 진행·복주머니 클릭 영역
+src/game/sfx.ts               Web Audio 합성 효과음(“띠링!”, 복주머니 열림, 흰 양 “뿅”)
+src/components/               GameExperience(흐름) · StartGate(격려 문구) · HopePicker(소망) · TitleBanner · DialogBox · ResultWindow · PlayerDialog · HelpDialog · Modal · pixel(UI 프리미티브)
 src/lib/event.ts              모드/기간 판정, 이름 검증, Web Crypto 균등 추첨, 핸들러(시각·난수 주입 가능)
-src/lib/portrait.ts           인트로 얼굴 합성·끄덕임·음표 (원본 1254px 좌표)
-src/lib/art.ts                336×272 픽셀 풍경, 84×88 복주머니
-src/lib/ticket.ts             티켓 레이아웃(실측 줄바꿈)과 PNG 저장
+src/lib/ticket.ts             픽셀 티켓 레이아웃(실측 줄바꿈)과 PNG 저장
 src/lib/storage.ts            모드별 마지막 결과(이름 제외) · 구버전 v1 키 호환 · 저장소 차단 시 메모리
-src/styles/                   SSR 레지스트리, 전역 토큰
-public/assets/yang.png        마스코트 원화 1254×1254 (인트로·장면·티켓 공용)
+src/fonts/                    Galmuri11 / Galmuri11 Bold (SIL OFL 1.1, OFL-Galmuri.md)
+public/assets/yang.png        마스코트 원화 1254×1254 (도트 스프라이트의 원본, 파비콘)
 ```
+
+## 도트 그림 고치기
+
+지형·캐릭터는 “아트 픽셀” 단위의 작은 캔버스에 그린 뒤 확대해 픽셀 경계를 유지하고, 하늘·햇무리·스포트라이트는 화면 해상도로 부드럽게 그립니다. 해에서 뻗어 나가는 햇살 줄무늬는 욱일기처럼 보일 수 있어 넣지 않습니다(해는 언덕 뒤에 반쯤 걸린 그라데이션 원 + 구름 띠). 스프라이트는 `src/game/sprites.ts`의 문자열 격자(`.`=투명, 나머지는 팔레트 키)라서 글자만 바꿔 수정할 수 있습니다. 색은 같은 파일의 팔레트와 `src/game/world.ts`의 새벽/일출 색 쌍에서 바꿉니다.
 
 ## 참고
 
 - 음악은 사용자가 ‘첫 곡 듣기’를 누를 때만 YouTube 임베드가 생성됩니다. 일부 영상은 지역·권리 설정으로 임베드가 막힐 수 있어 모달에 원문 링크가 항상 있습니다. YouTube 광고가 나올 수 있습니다.
-- 글꼴은 Pretendard → Apple SD Gothic Neo → Malgun Gothic 순서로 기기에 설치된 글꼴을 씁니다. Pretendard를 모든 기기에 강제하려면 웹폰트를 `layout.tsx`에서 불러오세요.
+- 픽셀 글꼴은 [Galmuri](https://github.com/quiple/galmuri)(SIL OFL 1.1)를 프로젝트에 포함했습니다. 12px 격자 글꼴이라 18·24·36·48px처럼 6의 배수 크기에서 가장 또렷합니다.

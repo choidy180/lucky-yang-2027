@@ -3,69 +3,65 @@
 import { createGlobalStyle } from "styled-components";
 
 export const colors = {
-  page: "#faf7ee",
-  card: "#fffdf5",
-  ink: "#302c28",
-  muted: "#685f55",
-  red: "#c94a3d",
-  redHover: "#b93f34",
+  night: "#131532",
+  dusk: "#2c295b",
+  ink: "#3a2622",
+  paper: "#fff7e6",
+  paperShade: "#f1dcc0",
+  red: "#d9473b",
+  redDark: "#a8352b",
+  redLight: "#f07a5f",
   wine: "#b33e35",
-  edge: "#d8cbbb",
-  frame: "#635848",
-  gold: "#d5a243",
-  focus: "#235f74",
+  gold: "#ffd36b",
+  cream: "#fff3d6",
+  muted: "#7a5f55",
+  focus: "#ffd36b",
 } as const;
 
 export const fonts = {
-  sans: 'Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
-  mono: '"Courier New", Courier, monospace',
+  pixel: 'var(--font-pixel), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
 } as const;
 
-/** One-column layout below this width. */
+/** Phone layout below this width. */
 export const MOBILE = "@media (max-width: 740px)";
+export const DESKTOP = "@media (min-width: 741px)";
 
 export const GlobalStyle = createGlobalStyle`
   :root {
-    --page: ${colors.page};
-    --card: ${colors.card};
+    --night: ${colors.night};
     --ink: ${colors.ink};
-    --muted: ${colors.muted};
+    --paper: ${colors.paper};
     --red: ${colors.red};
-    --wine: ${colors.wine};
-    --edge: ${colors.edge};
-    --sans: ${fonts.sans};
-    --mono: ${fonts.mono};
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
 
+  html, body { height: 100%; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
   body {
     margin: 0;
-    min-height: 100svh;
-    background-color: var(--page);
-    background-image: radial-gradient(#b6a58c33 0.75px, transparent 0.85px);
-    background-size: 7px 7px;
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 16px;
-    line-height: 1.55;
+    overflow: hidden;
+    background: ${colors.night};
+    color: ${colors.cream};
+    font-family: ${fonts.pixel};
+    font-size: 18px;
+    line-height: 1.5;
     word-break: keep-all;
     overflow-wrap: anywhere;
+    -webkit-font-smoothing: none;
   }
 
-  h1, h2, h3, p { margin: 0; }
-  strong, b { font-weight: 700; }
+  h1, h2, h3, p { margin: 0; font-weight: inherit; }
 
   button, input { font: inherit; color: inherit; }
   button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   button:disabled { cursor: default; }
   a { color: inherit; -webkit-tap-highlight-color: transparent; }
 
-  button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
-    outline: 3px solid ${colors.focus};
+  :focus-visible {
+    outline: 4px solid ${colors.focus};
     outline-offset: 4px;
   }
   [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
@@ -85,6 +81,7 @@ export const GlobalStyle = createGlobalStyle`
     *, *::before, *::after {
       scroll-behavior: auto !important;
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }

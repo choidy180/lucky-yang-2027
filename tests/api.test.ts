@@ -140,3 +140,26 @@ describe("route modules", () => {
     expect((await handleDraw(new Request("http://localhost/api/draw"), { mode: "test" })).status).toBe(405);
   });
 });
+
+describe("POST /api/draw with a wish", () => {
+  it("answers with a song and blessing that suit the chosen wish", async () => {
+    const { hopes } = await import("@/data/hopes");
+    for (const hope of hopes) {
+      const res = await handleDraw(post({ name: "다온", hope: hope.key }), { mode: "test" });
+      expect(res.status).toBe(200);
+      const t = (await res.json()) as Ticket;
+      expect(t.hope).toBe(hope.key);
+      expect(hope.songs).toContain(t.songIndex);
+      expect(hope.blessings).toContain(t.blessingIndex);
+    }
+  });
+
+  it("rejects an unknown wish, and still works without one", async () => {
+    for (const hope of ["money", 3, "", true]) {
+      expect((await handleDraw(post({ name: "다온", hope }), { mode: "test" })).status, String(hope)).toBe(400);
+    }
+    const res = await handleDraw(post({ name: "다온" }), { mode: "test" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).not.toHaveProperty("hope");
+  });
+});

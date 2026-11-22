@@ -1,5 +1,6 @@
 // Remembers only the last successful draw per mode, without the recipient name.
 // Storage may be unavailable (private mode, blocked cookies); the tab then keeps it in memory.
+import { findHope } from "@/data/hopes";
 import type { EventMode, Song, StoredDraw, Ticket } from "./types";
 
 export const lastKey = (mode: EventMode) => `lucky-yang:last:${mode}`;
@@ -27,7 +28,8 @@ export interface Catalog {
 export function validateDraw(value: unknown, catalog: Catalog): StoredDraw | null {
   if (typeof value !== "object" || value === null) return null;
   const v = value as Partial<Record<keyof StoredDraw, unknown>>;
-  const { songIndex, blessingIndex, song, blessing } = v;
+  const { songIndex, blessingIndex, song, blessing, hope } = v;
+  if (hope !== undefined && !findHope(hope)) return null;
   if (!Number.isInteger(songIndex) || !Number.isInteger(blessingIndex)) return null;
   const si = songIndex as number;
   const bi = blessingIndex as number;
@@ -35,7 +37,9 @@ export function validateDraw(value: unknown, catalog: Catalog): StoredDraw | nul
   const track = catalog.tracks[si]!;
   if (typeof song !== "object" || song === null || (song as Song).videoId !== track.videoId) return null;
   if (typeof blessing !== "string" || !blessing) return null;
-  return { songIndex: si, blessingIndex: bi, song: { title: track.title, artist: track.artist, videoId: track.videoId }, blessing };
+  const draw: StoredDraw = { songIndex: si, blessingIndex: bi, song: { title: track.title, artist: track.artist, videoId: track.videoId }, blessing };
+  if (typeof hope === "string") draw.hope = hope;
+  return draw;
 }
 
 function parse(raw: string | null): { present: boolean; value: unknown } {
@@ -73,8 +77,9 @@ export function readLastDraw(mode: EventMode, catalog: Catalog, storage: Storage
 
 export function rememberDraw(mode: EventMode, ticket: Ticket, storage: StorageLike | null = defaultStorage()): void {
   // The name never leaves the screen, the response and the user's own ticket file.
-  const { songIndex, blessingIndex, song, blessing } = ticket;
+  const { songIndex, blessingIndex, song, blessing, hope } = ticket;
   const draw: StoredDraw = { songIndex, blessingIndex, song: { title: song.title, artist: song.artist, videoId: song.videoId }, blessing };
+  if (hope) draw.hope = hope;
   memory.set(mode, draw);
   try {
     storage?.setItem(lastKey(mode), JSON.stringify(draw));

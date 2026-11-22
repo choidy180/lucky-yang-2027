@@ -12,12 +12,16 @@ const Video = styled.iframe`
   min-height: 200px;
   aspect-ratio: 16 / 9;
   border: 0;
-  border-radius: 7px;
-  background: #282422;
+  background: #1b1a3a;
+  box-shadow:
+    0 -4px 0 0 #3a2622,
+    0 4px 0 0 #3a2622,
+    -4px 0 0 0 #3a2622,
+    4px 0 0 0 #3a2622;
 `;
 
 const Links = styled.div`
-  margin-top: 12px;
+  margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -152,3 +152,45 @@ describe("parseIndexParam", () => {
     for (const bad of [null, "", "-1", "1.5", "abc", "1e3", " 3"]) expect(parseIndexParam(bad)).toBeUndefined();
   });
 });
+
+describe("wishes (내년 1순위 소망)", () => {
+  it("offers several wishes that together cover every song and blessing", async () => {
+    const { hopes } = await import("@/data/hopes");
+    expect(hopes.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(hopes.map((h) => h.key)).size).toBe(hopes.length);
+    const songIdx = new Set(hopes.flatMap((h) => [...h.songs]));
+    const blessIdx = new Set(hopes.flatMap((h) => [...h.blessings]));
+    expect(songIdx.size).toBe(songs.length);
+    expect(blessIdx.size).toBe(blessings.length);
+    for (const h of hopes) {
+      expect(h.songs.length).toBeGreaterThanOrEqual(4);
+      expect(h.blessings.length).toBeGreaterThanOrEqual(4);
+      for (const i of h.songs) expect(i).toBeLessThan(songs.length);
+      for (const i of h.blessings) expect(i).toBeLessThan(blessings.length);
+    }
+  });
+
+  it("draws only from the wish's songs and blessings and skips the previous pick", async () => {
+    const { hopes } = await import("@/data/hopes");
+    for (const hope of hopes) {
+      let prev = drawFortune({}, undefined, undefined, undefined, hope);
+      for (let i = 0; i < 40; i++) {
+        const next = drawFortune(prev, undefined, undefined, undefined, hope);
+        expect(hope.songs).toContain(next.songIndex);
+        expect(hope.blessings).toContain(next.blessingIndex);
+        expect(next.songIndex).not.toBe(prev.songIndex);
+        expect(next.blessingIndex).not.toBe(prev.blessingIndex);
+        prev = next;
+      }
+    }
+  });
+
+  it("pickFrom ignores invalid indices, keeps a lone choice and fails when nothing is left", async () => {
+    const { pickFrom } = await import("@/lib/event");
+    expect(pickFrom([3, 99, -1], 10, 3)).toBe(3);
+    expect(() => pickFrom([50], 10)).toThrow(EmptyPoolError);
+    const seen = new Set<number>();
+    for (let i = 0; i < 200; i++) seen.add(pickFrom([1, 2, 3], 10, 2));
+    expect([...seen].sort()).toEqual([1, 3]);
+  });
+});

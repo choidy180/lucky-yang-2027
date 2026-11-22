@@ -2,23 +2,25 @@
 
 import { useEffect, useId, useRef, type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import styled from "styled-components";
-import { colors } from "@/styles/global";
+import { DESKTOP, colors } from "@/styles/global";
+import { pixelFrame } from "./pixel";
 
 const Dialog = styled.dialog`
-  width: min(530px, calc(100% - 32px));
+  width: min(560px, calc(100% - 40px));
   max-width: none;
-  max-height: min(84dvh, calc(100% - 32px));
+  max-height: min(84dvh, calc(100% - 40px));
   padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  background: ${colors.card};
+  border: 0;
+  border-radius: 0;
+  background: ${colors.paper};
   color: ${colors.ink};
-  border: 1.5px solid #655b4c;
-  border-radius: 15px;
-  box-shadow: 0 5px 0 #56463744;
+  font-family: inherit;
+  ${pixelFrame(colors.ink)}
 
   &::backdrop {
-    background: #27231f72;
+    background: rgba(12, 10, 30, 0.6);
   }
 `;
 
@@ -30,52 +32,63 @@ const Head = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 17px 23px;
-  background: ${colors.card};
-  border-bottom: 1px solid ${colors.edge};
+  padding: 12px 16px 12px 20px;
+  background: ${colors.red};
+  color: #fff;
 
   h2 {
-    font-size: 1.25rem;
-    letter-spacing: -0.05em;
-    line-height: 1.3;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.35;
+    ${DESKTOP} {
+      font-size: 24px;
+    }
   }
 `;
 
 const Close = styled.button`
   flex: none;
-  width: 36px;
-  height: 36px;
-  border: 1px solid ${colors.edge};
-  border-radius: 7px;
-  background: transparent;
-  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: ${colors.paper};
+  color: ${colors.ink};
+  font-size: 24px;
+  font-weight: 700;
   line-height: 1;
+  box-shadow: inset 0 -4px 0 0 ${colors.paperShade};
 `;
 
 const Body = styled.div`
-  padding: 19px 23px 24px;
+  padding: 18px 22px 24px;
+  font-size: 18px;
+  line-height: 1.6;
 
   p {
-    margin: 5px 0 15px;
+    margin: 4px 0 14px;
   }
   ol {
     margin: 0;
-    padding-left: 1.35rem;
+    padding-left: 1.4em;
   }
   li + li {
     margin-top: 10px;
   }
   a {
-    color: #9d372e;
+    color: ${colors.wine};
     font-weight: 700;
     text-underline-offset: 4px;
   }
 `;
 
 export const DialogNote = styled.p`
-  margin-top: 12px !important;
-  color: #736554;
-  font-size: 0.86rem;
+  margin-top: 14px !important;
+  color: ${colors.muted};
+  font-size: 12px;
+  line-height: 1.6;
+  ${DESKTOP} {
+    font-size: 18px;
+  }
 `;
 
 interface ModalProps {
